@@ -32,26 +32,25 @@
 #include <string.h>
 #include <msp430x14x.h>
 
-#include "scandal_timer.h"
-#include "scandal_led.h"
-#include "scandal_can.h"
-#include "scandal_engine.h"
-#include "scandal_spi.h"
-#include "spi_devices.h"
-#include "scandal_devices.h"
-#include "scandal_utils.h"
-#include "scandal_message.h"
+#include <scandal/timer.h>
+#include <scandal/led.h>
+#include <scandal/can.h>
+#include <scandal/engine.h>
+#include <scandal/spi.h>
+#include <scandal/devices.h>
+#include <scandal/utils.h>
+#include <scandal/message.h>
+#include <scandal/types.h>
+#include <scandal/uart.h>
+#include <scandal/eeprom.h>
+#include <scandal/error.h>
+#include <scandal/tritium.h>
 
-#include "scandal_types.h"
-#include "scandal_uart.h"
-#include "scandal_eeprom.h"
-#include "scandal_error.h"
-#include "mcp2510.h"
+#include <arch/mcp2510.h>
 
-#include "hardware.h"
-#include "scandal_uart.h"
-
-#include "serial.h"
+#include <project/spi_devices.h>
+#include <project/hardware.h>
+#include <project/serial.h>
 
 #define WDTCTL_INIT     WDTPW|WDTHOLD
 
@@ -519,6 +518,7 @@ void handle_command(char mode){
 	       "r: raw mode -- exit using 'q'\n\r"
 	       "t: timesync message\n\r"
 	       "d: display timesync messages\n\r"
+	       "w: go into wavesculptor mode\n\r"
 	       "\n\r");
         break;
 		
@@ -1021,6 +1021,48 @@ void handle_command(char mode){
 		}
 		puts_P("\r\n");
 		
+		break;
+
+	 case 'w': // wavesculptor mode...
+		{
+			int going = 1;
+			uint8_t c;
+			sc_time_t last_ws_command_transmission;
+			float velocity = 0.0; // velocity in metres per second
+			float bus_current = 1.0; // perentage of bus current max
+			float motor_current = 1.0;
+
+			while(going) {
+
+				can_poll();
+
+				while(UART_is_received()) {
+					c = UART_ReceiveByte();
+
+					toggle_red_led(); 
+
+					if(c == 'q') {
+						going = 0; 
+					}
+
+					if (c == 'u') {
+						velocity = velocity + 0.1;
+					}
+
+					if (c == 'd') {
+						velocity = velocity - 0.1;
+					}
+
+					if (sc_get_timer() > last_ws_command_transmission + 200) {
+
+						scandal_send_ws_packet(DC_CAN_BASE+DC_DRIVE, velocity, motor_current);
+						scandal_send_ws_packet(DC_CAN_BASE+DC_POWER, 0.0, bus_current);
+
+					}
+
+				}
+			}
+		}
 		break;
     }
 }

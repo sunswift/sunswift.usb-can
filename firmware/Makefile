@@ -5,26 +5,26 @@
 MAIN_NAME=usbcan
 ARCH=msp430
 MCU=msp430x149
-BUILD_DIR=.
-OUTPUT_DIR=../outputs
+BUILD_DIR=./build
+
+SCANDAL=../scandal
+ARCH_DIR=$(SCANDAL)/src/arch/msp430f149
 
 AS=msp430-as
 CC=msp430-gcc
 OBJCOPY=msp430-objcopy
 OBJDUMP=msp430-objdump
 
-JTAG=msp430-jtag
-#JTAG=jtag.py
+JTAG=/opt/mspgcc/bin/msp430-jtag
 
-CFLAGS=-g -O2 -Wall -mmcu=$(MCU) -I../scandal/include -I../mcp2510 -I. -I.. -I../$(MAIN_NAME)
+CFLAGS=-g -O2 -Wall -mmcu=$(MCU) -I$(SCANDAL)/include -I$(ARCH_DIR)/include -I./include
 LDFLAGS=-mmcu=$(MCU) 
 ASFLAGS=-mmcu=$(MCU) 
 
 all: $(MAIN_NAME).hex $(MAIN_NAME).lst
-	cp $(MAIN_NAME).hex $(OUTPUT_DIR)/$(MAIN_NAME).hex
+	cp $(MAIN_NAME).hex $(BUILD_DIR)/$(MAIN_NAME).hex
 
 ## Copy the .hex and .elf file
- 
 $(MAIN_NAME).hex: $(MAIN_NAME).elf
 	$(OBJCOPY) -O ihex $< $@
 
@@ -33,12 +33,12 @@ $(MAIN_NAME).lst: $(MAIN_NAME).elf
 
 ## Link the .o files into the .out (.elf) file. 
 
-$(MAIN_NAME).elf :  $(MAIN_NAME).o spi_driver.o led.o scandal_timer.o scandal_obligations.o $(BUILD_DIR)/scandal_eeprom.o $(BUILD_DIR)/mcp2510.o $(BUILD_DIR)/scandal_error.o $(BUILD_DIR)/scandal_engine.o  $(BUILD_DIR)/scandal_utils.o $(BUILD_DIR)/scandal_message.o serial.o
+$(MAIN_NAME).elf :  $(BUILD_DIR)/$(MAIN_NAME).o $(BUILD_DIR)/spi_driver.o $(BUILD_DIR)/led.o $(BUILD_DIR)/scandal_timer.o $(BUILD_DIR)/scandal_obligations.o $(BUILD_DIR)/flash.o $(BUILD_DIR)/mcp2510.o $(BUILD_DIR)/error.o $(BUILD_DIR)/engine.o  $(BUILD_DIR)/utils.o $(BUILD_DIR)/message.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/maths.o
 	$(CC) $^ $(LDFLAGS) -o $(MAIN_NAME).elf
 
 ## How to build .o, .s and .o files from .c, .c and .s files respectively. 
 
-%.o : %.c 
+$(BUILD_DIR)/%.o : src/%.c 
 	$(CC) -c $(CFLAGS) $< -o $@
 
 %.s : %.c
@@ -49,22 +49,25 @@ $(MAIN_NAME).elf :  $(MAIN_NAME).o spi_driver.o led.o scandal_timer.o scandal_ob
 
 ## How to build individual
 
-$(BUILD_DIR)/scandal_eeprom.o : ../mspenv/scandal_eeprom.c
+$(BUILD_DIR)/flash.o : $(ARCH_DIR)/drivers/flash.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD_DIR)/mcp2510.o : ../mcp2510/mcp2510.c
+$(BUILD_DIR)/mcp2510.o : $(ARCH_DIR)/drivers/mcp2510.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD_DIR)/scandal_error.o : ../scandal/source/scandal_error.c
+$(BUILD_DIR)/error.o : $(SCANDAL)/src/error.c
 	$(CC) $(CFLAGS) -c -o $@ $<	
 
-$(BUILD_DIR)/scandal_engine.o : ../scandal/source/scandal_engine.c
+$(BUILD_DIR)/engine.o : $(SCANDAL)/src/engine.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD_DIR)/scandal_utils.o : ../scandal/source/scandal_utils.c
+$(BUILD_DIR)/maths.o : $(SCANDAL)/src/maths.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD_DIR)/scandal_message.o : ../scandal/source/scandal_message.c
+$(BUILD_DIR)/utils.o : $(SCANDAL)/src/utils.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(BUILD_DIR)/message.o : $(SCANDAL)/src/message.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:

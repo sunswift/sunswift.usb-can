@@ -29,7 +29,7 @@
 #ifndef __SCANDAL_CONFIG__
 #define __SCANDAL_CONFIG__
 
-#include <scandal_devices.h>
+#include <scandal/devices.h>
 
 /* Define the type of device being used */
 #ifdef THIS_DEVICE_TYPE

@@ -27,10 +27,9 @@
  */
 #include <io.h>
 
-#include "spi_devices.h" 
-#include "scandal_spi.h"
-
-#include "scandal_led.h"
+#include <project/spi_devices.h>
+#include <scandal/spi.h>
+#include <scandal/led.h>
 
 /* Initialize the SPI driver */         
 

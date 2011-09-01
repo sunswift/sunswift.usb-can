@@ -32,9 +32,9 @@
 
 #include <stdlib.h>
 
-#include "hardware.h"
+#include <project/hardware.h>
 
-#include "scandal_uart.h"
+#include <scandal/uart.h>
 
 static char * tx_buf_start;
 static char * tx_buf_ptr;
@@ -193,9 +193,8 @@ extern void UART_PrintfEndOfLine(void){
   uart0_tx("\n\r", 2); 
 }
 
-extern int UART_Init           (void){
+extern void UART_Init           (void){
  init_uart(); 
- return 0; 
 }
 
 extern u08  UART_CheckReceived  (void){

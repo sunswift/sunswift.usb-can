@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------                                 
     USBCAN Main
-    File name: scandal_obligations.c
+    File name: led.c
     Author: David Snowdon, David Favaloro
     Description: Part of the USBCAN program
 
@@ -25,35 +25,35 @@
  * You should have received a copy of the GNU General Public License
  * along with Sunswift USBCAN.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 #include <io.h>
+#include <signal.h>
+#include <iomacros.h>
 
-#include "scandal_obligations.h"
-#include "scandal_error.h"
-#include "scandal_devices.h"
-#include "scandal_led.h"
+#include <scandal/led.h>
 
-/* Reset the node in a safe manner
-	- will be called from handle_scandal */
-void scandal_reset_node(void){
-  /* Reset the node here */
-  /* Write an invalid password to the WDT */
-  WDTCTL = ~WDTPW;
+#include <project/hardware.h>
+    
+#define BIT(x) (1<<x)
+
+void yellow_led(u08 on){
+	if(!on)
+		P5OUT |= YELLOWLED;
+	else
+		P5OUT &= ~YELLOWLED;	
+}
+ 
+void toggle_yellow_led(void){
+	P5OUT ^= YELLOWLED;
 }
 
-void scandal_user_do_first_run(void){
-  return;
+void red_led(u08 on){
+	if(!on)
+		P5OUT |= REDLED;
+	else
+		P5OUT &= ~REDLED;	
 }
-
-u08 scandal_user_do_config(u08 param, s32 value, s32 value2){
-	return NO_ERR;
+ 
+void toggle_red_led(void){
+	P5OUT ^= REDLED;
 }
-
-u08 scandal_user_handle_message(can_msg* msg){
-	return NO_ERR;
-}
-
-u08 scandal_user_handle_command(u08 command, u08* data){
-  return NO_ERR; 
-}
-
