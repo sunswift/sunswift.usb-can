@@ -17,7 +17,7 @@ OBJDUMP=msp430-objdump
 
 JTAG=/opt/mspgcc/bin/msp430-jtag
 
-CFLAGS=-g -O2 -Wall -mmcu=$(MCU) -I$(SCANDAL)/include -I$(ARCH_DIR)/include -I./include
+CFLAGS=-g -O1 -Wall -mmcu=$(MCU) -I$(SCANDAL)/include -I$(ARCH_DIR)/include -I./include
 LDFLAGS=-mmcu=$(MCU) 
 ASFLAGS=-mmcu=$(MCU) 
 
@@ -75,6 +75,14 @@ clean:
 	rm *~
 	rm -f $(BUILD_DIR)/*.o
 	rm $(MAIN_NAME).lst $(MAIN_NAME).elf
+
+cscope:
+	@echo "[GEN] cscope"
+	@if [ -d "$(SCANDAL)" ]; then \
+		find $(SCANDAL) -name "*.[chSs]" >> cscope.files; \
+	fi
+	@find . -name "*.[chSs]">> cscope.files
+	@cscope -b -f cscope.out
 
 program: $(MAIN_NAME).hex
 	$(JTAG) -eEpvrw $(MAIN_NAME).hex

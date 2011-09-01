@@ -178,6 +178,7 @@ void print_byte(u08 byte){
 void print_int(s32 val);
 void print_uint(u32 val);
 void serial_send_ascii(u32 id_buf, u08* buf, u08 length);
+void serial_send_ascii_std(u32 id_buf, u08* buf, u08 length);
 void print_string(u08*	buf);
 u32 read_dec_num(void);
 u08 read_signed_num(s32* num);
@@ -379,6 +380,16 @@ void serial_send_ascii(u32 id, u08* buf, u08 length){
 	}
 }
 
+void serial_send_ascii_std(u32 id, u08* buf, u08 length) {
+	int i = 0;
+	puts_P("WS:\tid:");
+	print_int(id);
+	puts_P("\tvalue:\t");
+	for(i=0; i<8; i++){
+		UART_Printfu08(buf[i]); puts_P(" ");
+	}
+	puts_P("\n\r");
+}
 
 void print_string(u08*	buf){
 	u32 		i,j;
@@ -647,18 +658,20 @@ void handle_command(char mode){
     case 'm':
 		while(!UART_is_received()) {             /* loop forever */
 			can_poll();
-			
+
 			err = can_get_msg(&msg);
-			
-			if(err == NO_ERR){
-				serial_send_ascii(msg.id, msg.data, msg.length);
-			}else{
-				
+
+			if (msg.ext) {
+				if(err == NO_ERR){
+					serial_send_ascii(msg.id, msg.data, msg.length);
+				}
+			} else {
+				serial_send_ascii_std(msg.id, msg.data, msg.length);
 			}
 		}
 		UART_ReceiveByte();
 		break;
-		
+
 	case 'e':
         while(!UART_is_received()) {             /* loop forever */
 			u08 rx_err;
@@ -888,8 +901,6 @@ void handle_command(char mode){
 				while(UART_is_received()){
 					c = UART_ReceiveByte();
 					
-					toggle_red_led(); 
-					
 					if(!escaped){
 						if(c == 'q'){
 							going = 0; 
@@ -909,7 +920,6 @@ void handle_command(char mode){
 							rcvd_so_far = 0; 
 							receiving = 1; 
 							in_chksum = 0; 
-							toggle_red_led();
 							continue;
 						}
 					}
@@ -940,9 +950,6 @@ void handle_command(char mode){
 								msg.length = raw_pkt[12]; 
 								
 								can_send_msg(&msg, 0); 
-								toggle_yellow_led();
-							}else{
-								toggle_red_led();
 							}
 						}
 					}
@@ -1026,9 +1033,9 @@ void handle_command(char mode){
 	 case 'w': // wavesculptor mode...
 		{
 			int going = 1;
-			uint8_t c;
-			sc_time_t last_ws_command_transmission;
-			float velocity = 0.0; // velocity in metres per second
+			//uint8_t c;
+			sc_time_t last_ws_command_transmission = sc_get_timer();
+			float velocity = 40.0; // velocity in metres per second
 			float bus_current = 1.0; // perentage of bus current max
 			float motor_current = 1.0;
 
@@ -1036,6 +1043,7 @@ void handle_command(char mode){
 
 				can_poll();
 
+#if 0
 				while(UART_is_received()) {
 					c = UART_ReceiveByte();
 
@@ -1047,22 +1055,38 @@ void handle_command(char mode){
 
 					if (c == 'u') {
 						velocity = velocity + 0.1;
+						puts_P("Increasing velocity by 0.1m/s\n\r");
 					}
 
 					if (c == 'd') {
 						velocity = velocity - 0.1;
+						puts_P("Decreasing velocity by 0.1m/s\n\r");
 					}
 
-					if (sc_get_timer() > last_ws_command_transmission + 200) {
 
-						scandal_send_ws_packet(DC_CAN_BASE+DC_DRIVE, velocity, motor_current);
-						scandal_send_ws_packet(DC_CAN_BASE+DC_POWER, 0.0, bus_current);
+				} //UART_is_received
+#endif
+				if (sc_get_timer() > last_ws_command_transmission + 200) {
 
-					}
+					UART_PrintfProgStr("sending ws id ");
+
+					print_int(sc_get_timer());
+
+					UART_PrintfProgStr("\n\r");
+
+					scandal_send_ws_drive_command(DC_CAN_BASE+DC_DRIVE, velocity, motor_current);
+					scandal_send_ws_drive_command(DC_CAN_BASE+DC_POWER, 0.0, bus_current);
+					scandal_send_ws_id(DC_CAN_BASE, "TRIb", 4);
+
+					last_ws_command_transmission = sc_get_timer();
 
 				}
-			}
-		}
+
+			} // while going
+		} // case block
+
+		puts_P("\n\r");
+
 		break;
     }
 }
@@ -1088,7 +1112,7 @@ int main(void) {
 
   init_can();
   can_register_id(0x00, 0x00, 0x00);
-    
+
   UART_baud_rate(115200, CLOCK_SPEED); 
 
   eint();
@@ -1113,10 +1137,15 @@ int main(void) {
       //     toggle_red_led();
       puts_P(">");
     }
+
+		if(sc_get_timer() >= my_timer + 1000) {
+			toggle_yellow_led();
+
+			/* Update the timer */
+			my_timer = sc_get_timer();
+		}
+
+
   }
 }
-
-
-
-
 
