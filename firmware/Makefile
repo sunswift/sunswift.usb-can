@@ -22,23 +22,24 @@ LDFLAGS=-mmcu=$(MCU)
 ASFLAGS=-mmcu=$(MCU) 
 
 all: $(MAIN_NAME).hex $(MAIN_NAME).lst
-	cp $(MAIN_NAME).hex $(BUILD_DIR)/$(MAIN_NAME).hex
 
 ## Copy the .hex and .elf file
 $(MAIN_NAME).hex: $(MAIN_NAME).elf
-	$(OBJCOPY) -O ihex $< $@
+	$(OBJCOPY) -O ihex $(BUILD_DIR)/$< $(BUILD_DIR)/$@
 
 $(MAIN_NAME).lst: $(MAIN_NAME).elf
-	$(OBJDUMP) -DS $(MAIN_NAME).elf > ${MAIN_NAME}.lst	
+	$(OBJDUMP) -DS $(BUILD_DIR)/$(MAIN_NAME).elf > $(BUILD_DIR)/${MAIN_NAME}.lst
 
 ## Link the .o files into the .out (.elf) file. 
 
 $(MAIN_NAME).elf :  $(BUILD_DIR)/$(MAIN_NAME).o $(BUILD_DIR)/spi_driver.o $(BUILD_DIR)/led.o $(BUILD_DIR)/scandal_timer.o $(BUILD_DIR)/scandal_obligations.o $(BUILD_DIR)/flash.o $(BUILD_DIR)/mcp2510.o $(BUILD_DIR)/error.o $(BUILD_DIR)/engine.o  $(BUILD_DIR)/utils.o $(BUILD_DIR)/message.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/maths.o
-	$(CC) $^ $(LDFLAGS) -o $(MAIN_NAME).elf
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $^ $(LDFLAGS) -o $(BUILD_DIR)/$(MAIN_NAME).elf
 
 ## How to build .o, .s and .o files from .c, .c and .s files respectively. 
 
 $(BUILD_DIR)/%.o : src/%.c 
+	@mkdir -p $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 %.s : %.c
@@ -71,10 +72,10 @@ $(BUILD_DIR)/message.o : $(SCANDAL)/src/message.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o *.out *.map *.hex
-	rm *~
-	rm -f $(BUILD_DIR)/*.o
-	rm $(MAIN_NAME).lst $(MAIN_NAME).elf
+	rm -Rf $(BUILD_DIR)
+
+realclean: clean
+	rm cscope.files cscope.out
 
 cscope:
 	@echo "[GEN] cscope"
@@ -85,4 +86,4 @@ cscope:
 	@cscope -b -f cscope.out
 
 program: $(MAIN_NAME).hex
-	$(JTAG) -eEpvrw $(MAIN_NAME).hex
+	$(JTAG) -eEpvrw $(BUILD_DIR)/$(MAIN_NAME).hex
