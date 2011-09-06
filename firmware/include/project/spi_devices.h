@@ -33,6 +33,8 @@
 
 #define BIT(x) (1<<x)
 
+#define ERR_MARKER 0xDEADBEEF
+
 #define MCP2510			0              
 #define SPI_NUM_DEVICES         1
 #define SPI_DEVICE_NONE		SPI_NUM_DEVICES 

@@ -1033,44 +1033,60 @@ void handle_command(char mode){
 	 case 'w': // wavesculptor mode...
 		{
 			int going = 1;
-			//uint8_t c;
+			can_msg msg;
+			uint8_t c;
 			sc_time_t last_ws_command_transmission = sc_get_timer();
-			float velocity = 40.0; // velocity in metres per second
+			float velocity = 1.0; // velocity in metres per second
 			float bus_current = 1.0; // perentage of bus current max
 			float motor_current = 1.0;
 
 			while(going) {
 
+				// do can stuff
 				can_poll();
 
-#if 0
+				// help to empty the rx buffers
+				can_get_msg(&msg);
+
 				while(UART_is_received()) {
 					c = UART_ReceiveByte();
 
-					toggle_red_led(); 
+//					toggle_red_led(); 
 
 					if(c == 'q') {
 						going = 0; 
 					}
 
 					if (c == 'u') {
-						velocity = velocity + 0.1;
-						puts_P("Increasing velocity by 0.1m/s\n\r");
+						velocity = velocity + 1.0;
+						puts_P("Increasing velocity by 1.0m/s\n\r");
 					}
 
 					if (c == 'd') {
-						velocity = velocity - 0.1;
-						puts_P("Decreasing velocity by 0.1m/s\n\r");
+						velocity = velocity - 1.0;
+						puts_P("Decreasing velocity by 1.0m/s\n\r");
 					}
 
 
 				} //UART_is_received
-#endif
+
 				if (sc_get_timer() > last_ws_command_transmission + 200) {
 
-					UART_PrintfProgStr("sending ws id ");
+					UART_PrintfProgStr("sending drive command at time: ");
 
 					print_int(sc_get_timer());
+
+					UART_PrintfProgStr(", speed: ");
+
+					print_int((int)velocity);
+
+					UART_PrintfProgStr(", motor_current: ");
+
+					print_int((int)(motor_current*100));
+
+					UART_PrintfProgStr(" and bus_current: ");
+
+					print_int((int)(bus_current*100));
 
 					UART_PrintfProgStr("\n\r");
 
@@ -1139,7 +1155,7 @@ int main(void) {
     }
 
 		if(sc_get_timer() >= my_timer + 1000) {
-			toggle_yellow_led();
+			//toggle_yellow_led();
 
 			/* Update the timer */
 			my_timer = sc_get_timer();

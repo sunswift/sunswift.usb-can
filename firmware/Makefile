@@ -5,10 +5,10 @@
 MAIN_NAME=usbcan
 ARCH=msp430
 MCU=msp430x149
-BUILD_DIR=./build
+BUILD=./build
 
 SCANDAL=../scandal
-ARCH_DIR=$(SCANDAL)/src/arch/msp430f149
+ARCH=$(SCANDAL)/src/arch/msp430f149
 
 AS=msp430-as
 CC=msp430-gcc
@@ -17,62 +17,64 @@ OBJDUMP=msp430-objdump
 
 JTAG=/opt/mspgcc/bin/msp430-jtag
 
-CFLAGS=-g -O1 -Wall -mmcu=$(MCU) -I$(SCANDAL)/include -I$(ARCH_DIR)/include -I./include
+CFLAGS=-g -O1 -Wall -mmcu=$(MCU) -I$(SCANDAL)/include -I$(ARCH)/include -I./include
 LDFLAGS=-mmcu=$(MCU) 
 ASFLAGS=-mmcu=$(MCU) 
+
+OBJECTS=$(MAIN_NAME).o spi_driver.o led.o scandal_timer.o scandal_obligations.o flash.o mcp2510.o error.o engine.o utils.o message.o serial.o maths.o
 
 all: $(MAIN_NAME).hex $(MAIN_NAME).lst
 
 ## Copy the .hex and .elf file
 $(MAIN_NAME).hex: $(MAIN_NAME).elf
-	$(OBJCOPY) -O ihex $(BUILD_DIR)/$< $(BUILD_DIR)/$@
+	$(OBJCOPY) -O ihex $(BUILD)/$< $(BUILD)/$@
 
 $(MAIN_NAME).lst: $(MAIN_NAME).elf
-	$(OBJDUMP) -DS $(BUILD_DIR)/$(MAIN_NAME).elf > $(BUILD_DIR)/${MAIN_NAME}.lst
+	$(OBJDUMP) -DS $(BUILD)/$(MAIN_NAME).elf > $(BUILD)/${MAIN_NAME}.lst
 
 ## Link the .o files into the .out (.elf) file. 
 
-$(MAIN_NAME).elf :  $(BUILD_DIR)/$(MAIN_NAME).o $(BUILD_DIR)/spi_driver.o $(BUILD_DIR)/led.o $(BUILD_DIR)/scandal_timer.o $(BUILD_DIR)/scandal_obligations.o $(BUILD_DIR)/flash.o $(BUILD_DIR)/mcp2510.o $(BUILD_DIR)/error.o $(BUILD_DIR)/engine.o  $(BUILD_DIR)/utils.o $(BUILD_DIR)/message.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/maths.o
-	@mkdir -p $(BUILD_DIR)
-	$(CC) $^ $(LDFLAGS) -o $(BUILD_DIR)/$(MAIN_NAME).elf
+$(MAIN_NAME).elf: $(OBJECTS)
+	@mkdir -p $(BUILD)
+	$(CC)  $(addprefix $(BUILD)/,$(OBJECTS)) $(LDFLAGS) -o $(BUILD)/$(MAIN_NAME).elf
 
 ## How to build .o, .s and .o files from .c, .c and .s files respectively. 
 
-$(BUILD_DIR)/%.o : src/%.c 
-	@mkdir -p $(BUILD_DIR)
-	$(CC) -c $(CFLAGS) $< -o $@
+%.o: src/%.c 
+	@mkdir -p $(BUILD)
+	$(CC) -c $(CFLAGS) $< -o $(BUILD)/$@
 
-%.s : %.c
-	$(CC) -S $(CFLAGS) $< -o $@
+%.s: %.c
+	$(CC) -S $(CFLAGS) $< -o $(BUILD)/$@
 
-%.o : %.s
-	$(AS) -c $(ASFLAGS) $< -o $@
+%.o: %.s
+	$(AS) -c $(ASFLAGS) $< -o $(BUILD)/$@
 
 ## How to build individual
 
-$(BUILD_DIR)/flash.o : $(ARCH_DIR)/drivers/flash.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+flash.o: $(ARCH)/drivers/flash.c
+	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
 
-$(BUILD_DIR)/mcp2510.o : $(ARCH_DIR)/drivers/mcp2510.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+mcp2510.o: $(ARCH)/drivers/mcp2510.c
+	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
 
-$(BUILD_DIR)/error.o : $(SCANDAL)/src/error.c
-	$(CC) $(CFLAGS) -c -o $@ $<	
+error.o: $(SCANDAL)/src/error.c
+	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
 
-$(BUILD_DIR)/engine.o : $(SCANDAL)/src/engine.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+engine.o: $(SCANDAL)/src/engine.c
+	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
 
-$(BUILD_DIR)/maths.o : $(SCANDAL)/src/maths.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+maths.o: $(SCANDAL)/src/maths.c
+	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
 
-$(BUILD_DIR)/utils.o : $(SCANDAL)/src/utils.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+utils.o: $(SCANDAL)/src/utils.c
+	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
 
-$(BUILD_DIR)/message.o : $(SCANDAL)/src/message.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+message.o: $(SCANDAL)/src/message.c
+	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
 
 clean:
-	rm -Rf $(BUILD_DIR)
+	rm -Rf $(BUILD)
 
 realclean: clean
 	rm cscope.files cscope.out
@@ -86,4 +88,10 @@ cscope:
 	@cscope -b -f cscope.out
 
 program: $(MAIN_NAME).hex
-	$(JTAG) -eEpvrw $(BUILD_DIR)/$(MAIN_NAME).hex
+	@scp $(BUILD)/$(MAIN_NAME).hex yotsuba:/tmp;
+	@ssh yotsuba $(JTAG) -eEpvrw /tmp/$(MAIN_NAME).hex
+	#$(JTAG) -eEpvrw $(BUILD)/$(MAIN_NAME).hex
+
+reset:
+	@ssh yotsuba $(JTAG) -r
+	#$(JTAG) -r

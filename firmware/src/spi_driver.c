@@ -76,19 +76,33 @@ void spi_deselect_all(){
 
 /*! Perform an SPI read/write */ 
 u08 spi_transfer(u08 out_data){ 
-  u08	value; 
+	u08	value; 
 
-  IFG2 &= ~URXIFG1;
+	int32_t timeout = 100000;
 
-  while((IFG2 & UTXIFG1) == 0)
-      ;
-  
-  TXBUF1 = out_data;
+	IFG2 &= ~URXIFG1;
 
-  while((IFG2 & URXIFG1) == 0)
-      ;
+	while((IFG2 & UTXIFG1) == 0 && timeout != 0)
+		timeout--;
 
-  value = RXBUF1;
+	if (timeout == 0) {
+		toggle_red_led();
+		return 0;
+	}
 
-  return(value); 
+	TXBUF1 = out_data;
+
+	timeout = 100000;
+
+	while((IFG2 & URXIFG1) == 0 && timeout != 0)
+		timeout--;
+
+	if (timeout == 0) {
+		toggle_yellow_led();
+		return 0;
+	}
+
+	value = RXBUF1;
+
+	return(value); 
 } 
