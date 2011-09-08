@@ -1,12 +1,8 @@
-# Makefile for Sunswift USB-CAN board. 
-
-.PHONY: clean
+.PHONY: clean all
 
 MAIN_NAME=usbcan
-ARCH=msp430
 MCU=msp430x149
 BUILD=./build
-
 SCANDAL=../scandal
 ARCH=$(SCANDAL)/src/arch/msp430f149
 
@@ -23,55 +19,55 @@ ASFLAGS=-mmcu=$(MCU)
 
 OBJECTS=$(MAIN_NAME).o spi_driver.o led.o scandal_timer.o scandal_obligations.o flash.o mcp2510.o error.o engine.o utils.o message.o serial.o maths.o
 
-all: $(MAIN_NAME).hex $(MAIN_NAME).lst
+all: $(BUILD)/$(MAIN_NAME).hex $(BUILD)/$(MAIN_NAME).lst
 
 ## Copy the .hex and .elf file
-$(MAIN_NAME).hex: $(MAIN_NAME).elf
-	$(OBJCOPY) -O ihex $(BUILD)/$< $(BUILD)/$@
+$(BUILD)/$(MAIN_NAME).hex: $(BUILD)/$(MAIN_NAME).elf
+	$(OBJCOPY) -O ihex $< $@
 
-$(MAIN_NAME).lst: $(MAIN_NAME).elf
-	$(OBJDUMP) -DS $(BUILD)/$(MAIN_NAME).elf > $(BUILD)/${MAIN_NAME}.lst
+$(BUILD)/$(MAIN_NAME).lst: $(BUILD)/$(MAIN_NAME).elf
+	$(OBJDUMP) -DS $< > $@
 
 ## Link the .o files into the .out (.elf) file. 
 
-$(MAIN_NAME).elf: $(OBJECTS)
+$(BUILD)/$(MAIN_NAME).elf: $(addprefix $(BUILD)/,$(OBJECTS))
 	@mkdir -p $(BUILD)
-	$(CC)  $(addprefix $(BUILD)/,$(OBJECTS)) $(LDFLAGS) -o $(BUILD)/$(MAIN_NAME).elf
+	$(CC) $(addprefix $(BUILD)/,$(OBJECTS)) $(LDFLAGS) -o $(BUILD)/$(MAIN_NAME).elf
 
 ## How to build .o, .s and .o files from .c, .c and .s files respectively. 
 
-%.o: src/%.c 
+$(BUILD)/%.o: src/%.c 
 	@mkdir -p $(BUILD)
-	$(CC) -c $(CFLAGS) $< -o $(BUILD)/$@
+	$(CC) -c $(CFLAGS) $< -o $@
 
-%.s: %.c
-	$(CC) -S $(CFLAGS) $< -o $(BUILD)/$@
+$(BUILD)/%.s: %.c
+	$(CC) -S $(CFLAGS) $< -o $@
 
-%.o: %.s
-	$(AS) -c $(ASFLAGS) $< -o $(BUILD)/$@
+$(BUIDLD)/%.o: %.s
+	$(AS) -c $(ASFLAGS) $< -o $@
 
 ## How to build individual
 
-flash.o: $(ARCH)/drivers/flash.c
-	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
+$(BUILD)/flash.o: $(ARCH)/drivers/flash.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-mcp2510.o: $(ARCH)/drivers/mcp2510.c
-	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
+$(BUILD)/mcp2510.o: $(ARCH)/drivers/mcp2510.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-error.o: $(SCANDAL)/src/error.c
-	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
+$(BUILD)/error.o: $(SCANDAL)/src/error.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-engine.o: $(SCANDAL)/src/engine.c
-	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
+$(BUILD)/engine.o: $(SCANDAL)/src/engine.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-maths.o: $(SCANDAL)/src/maths.c
-	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
+$(BUILD)/maths.o: $(SCANDAL)/src/maths.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-utils.o: $(SCANDAL)/src/utils.c
-	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
+$(BUILD)/utils.o: $(SCANDAL)/src/utils.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-message.o: $(SCANDAL)/src/message.c
-	$(CC) $(CFLAGS) -c -o $(BUILD)/$@ $<
+$(BUILD)/message.o: $(SCANDAL)/src/message.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
 	rm -Rf $(BUILD)
