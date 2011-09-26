@@ -1,80 +1,93 @@
-.PHONY: clean all
+# Top level makefile for template project
+# The only modifications you should need to make are to change the CHIP, MAIN_NAME and
+# add any custom C source files to OBJECTS
 
-MAIN_NAME=usbcan
-MCU=msp430x149
-BUILD=./build
-SCANDAL=../scandal
-ARCH=$(SCANDAL)/src/arch/msp430f149
+# Set CHIP to be lpc11c14, lpc1768 or msp430f149 depending on what micro you're using
+CHIP = msp430f149
 
-AS=msp430-as
-CC=msp430-gcc
-OBJCOPY=msp430-objcopy
-OBJDUMP=msp430-objdump
+# This should be what your main C file is called
+MAIN_NAME = usbcan
 
-JTAG=/opt/mspgcc/bin/msp430-jtag
+# Directory definitions
+ROOT = ..
+SCANDAL = $(ROOT)/scandal
+ARCH = $(SCANDAL)/src/arch/$(CHIP)
+DRIVERS = $(ARCH)/drivers
+UTILS = $(ROOT)/utilities
+BUILD = ./build# never . or clean will delete everything
+SRC = ./src
 
-CFLAGS=-g -O1 -Wall -mmcu=$(MCU) -I$(SCANDAL)/include -I$(ARCH)/include -I./include
-LDFLAGS=-mmcu=$(MCU) 
-ASFLAGS=-mmcu=$(MCU) 
+# Custom project objects
+OBJECTS  = $(MAIN_NAME).o scandal_obligations.o
+# Scandal objects
+OBJECTS += engine.o error.o manager.o maths.o message.o utils.o stdio.o leds.o wavesculptor.o
+# Driver objects
+OBJECTS += can.o flash.o uart.o gpio.o timer.o wdt.o system.o
+# Add other objects here or in the architecture specific makefile
+OBJECTS +=
 
-OBJECTS=$(MAIN_NAME).o spi_driver.o led.o scandal_timer.o scandal_obligations.o flash.o mcp2510.o error.o engine.o utils.o message.o serial.o maths.o
+CFLAGS  = -I$(SCANDAL)/include # for scandal includes
+CFLAGS += -I$(ARCH)/include # for arch drivers
+CFLAGS += -I$(ARCH) #for anything else
+CFLAGS += -I./include # for project local includes
+# We should really try to minimise all warnings for error free code. Wall is needed for this.
+CFLAGS += -Wall
+# Optimise for size. Can also optimise for performance with 1, 2 or 3
+CFLAGS += -Os
+CFLAGS += -D$(CHIP)
 
-all: $(BUILD)/$(MAIN_NAME).hex $(BUILD)/$(MAIN_NAME).lst
+.PHONY: clean realclean cscope
 
-## Copy the .hex and .elf file
-$(BUILD)/$(MAIN_NAME).hex: $(BUILD)/$(MAIN_NAME).elf
-	$(OBJCOPY) -O ihex $< $@
+# For printing out colours in makefile scripts
+RED="\\033[91m"
+NORMAL="\\033[0m"
+YELLOW="\\e[1\;33m"
 
-$(BUILD)/$(MAIN_NAME).lst: $(BUILD)/$(MAIN_NAME).elf
-	$(OBJDUMP) -DS $< > $@
+# Include the chip specific makefile
+include makefile.$(CHIP)
 
-## Link the .o files into the .out (.elf) file. 
-
-$(BUILD)/$(MAIN_NAME).elf: $(addprefix $(BUILD)/,$(OBJECTS))
+# This target is special because it's the first in the list. We should make the build directory
+# here and do anything else that only needs to happen once
+$(BUILD)/$(MAIN_NAME).o: src/$(MAIN_NAME).c
+	@if [ ! -e "cscope.out" ]; then \
+		echo -e "[HINT] $(RED)You should learn to use cscope! Type make cscope$(NORMAL)"; \
+	fi
 	@mkdir -p $(BUILD)
-	$(CC) $(addprefix $(BUILD)/,$(OBJECTS)) $(LDFLAGS) -o $(BUILD)/$(MAIN_NAME).elf
+	@echo "[CC] $@"
+	@if [ "$(BUILD)" == "." ]; then echo -e "$(RED)Don't use . as BUILD$(NORMAL)"; exit 1; fi
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
-## How to build .o, .s and .o files from .c, .c and .s files respectively. 
+# Project local objects
+$(BUILD)/%.o: src/%.c
+	@echo "[CC] $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD)/%.o: src/%.c 
-	@mkdir -p $(BUILD)
-	$(CC) -c $(CFLAGS) $< -o $@
+# Architecture specific drivers
+$(BUILD)/%.o: $(DRIVERS)/%.c
+	@echo "[CC] $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUILD)/%.s: %.c
-	$(CC) -S $(CFLAGS) $< -o $@
+# Scandal engine
+$(BUILD)/%.o: $(SCANDAL)/src/%.c
+	@echo "[CC] $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
-$(BUIDLD)/%.o: %.s
-	$(AS) -c $(ASFLAGS) $< -o $@
+# Scandal drivers
+$(BUILD)/%.o: $(SCANDAL)/src/drivers/%.c
+	@echo "[CC] $@"
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
-## How to build individual
-
-$(BUILD)/flash.o: $(ARCH)/drivers/flash.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(BUILD)/mcp2510.o: $(ARCH)/drivers/mcp2510.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(BUILD)/error.o: $(SCANDAL)/src/error.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(BUILD)/engine.o: $(SCANDAL)/src/engine.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(BUILD)/maths.o: $(SCANDAL)/src/maths.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(BUILD)/utils.o: $(SCANDAL)/src/utils.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(BUILD)/message.o: $(SCANDAL)/src/message.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
+# Remove the build directory
 clean:
-	rm -Rf $(BUILD)
+	@echo "[CLEAN] $(BUILD)"
+	@if [ "$(BUILD)" == "." ]; then echo -e "$(RED)Don't use . as BUILD$(NORMAL)"; exit 1; fi
+	@rm -Rf $(BUILD)
 
+# Remove build directory and cscope
 realclean: clean
-	rm cscope.files cscope.out
+	@rm -f cscope.out cscope.files
 
+# Generate cscope database from all c, h and assembly files
 cscope:
 	@echo "[GEN] cscope"
 	@if [ -d "$(SCANDAL)" ]; then \
@@ -82,12 +95,3 @@ cscope:
 	fi
 	@find . -name "*.[chSs]">> cscope.files
 	@cscope -b -f cscope.out
-
-program: $(MAIN_NAME).hex
-	@scp $(BUILD)/$(MAIN_NAME).hex yotsuba:/tmp;
-	@ssh yotsuba $(JTAG) -eEpvrw /tmp/$(MAIN_NAME).hex
-	#$(JTAG) -eEpvrw $(BUILD)/$(MAIN_NAME).hex
-
-reset:
-	@ssh yotsuba $(JTAG) -r
-	#$(JTAG) -r

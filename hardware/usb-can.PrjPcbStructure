@@ -1,0 +1,6 @@
+Record=SheetSymbol|SourceDocument=TopLevel.SchDoc|Designator=5V-12V isolated|SchDesignator=5V-12V isolated|FileName=5V-12Visolated.SchDoc|SymbolType=Normal|RawFileName=5V-12Visolated.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol
+Record=SheetSymbol|SourceDocument=TopLevel.SchDoc|Designator=MSP430|SchDesignator=MSP430|FileName=MSP430F249.SchDoc|SymbolType=Normal|RawFileName=MSP430F249.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol
+Record=SheetSymbol|SourceDocument=TopLevel.SchDoc|Designator=U_USBserial|SchDesignator=U_USBserial|FileName=USBserial.SchDoc|SymbolType=Normal|RawFileName=USBserial.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol
+Record=SheetSymbol|SourceDocument=TopLevel.SchDoc|Designator=Unisolated CAN|SchDesignator=Unisolated CAN|FileName=3V3-CAN-UNISOLATED.Sch|SymbolType=Normal|RawFileName=3V3-CAN-UNISOLATED.Sch|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol
+Record=SheetSymbol|SourceDocument=3V3-CAN-UNISOLATED.Sch|Designator=U_3V-Switcher-50mA|SchDesignator=U_3V-Switcher-50mA|FileName=3V-Switcher-50mA.SCHDOC|SymbolType=Normal|RawFileName=3V-Switcher-50mA.SCHDOC|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol
+Record=TopLevelDocument|FileName=TopLevel.SchDoc

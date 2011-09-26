@@ -43,12 +43,15 @@
 /* Port 4 */
 
 /* Port 5 */
+#define RED_LED_PORT    5
+#define YELLOW_LED_PORT 5
+
 #define CAN_CS          BIT(0) /* Note: re-defined in scandal_devices.h */
 #define SIMO1           BIT(1)
 #define SOMI1           BIT(2)
 #define UCLK1           BIT(3)
-#define YELLOWLED       BIT(6)
-#define REDLED          BIT(7)
+#define YELLOW_LED_BIT  6
+#define RED_LED_BIT     7
 
 /* Port 6 / ADC */
 #define MEAS_12V_PIN    (BIT(7))

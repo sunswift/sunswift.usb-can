@@ -1,0 +1,44 @@
+.PHONY: all program reset
+
+MCU=msp430x149
+
+# Define utilities
+AS=msp430-as
+CC=msp430-gcc
+OBJCOPY=msp430-objcopy
+OBJDUMP=msp430-objdump
+
+JTAG=/opt/mspgcc/bin/msp430-jtag
+
+CFLAGS += -g -O1 -Wall -mmcu=$(MCU) -I$(SCANDAL)/include -I$(ARCH)/include -I./include
+LDFLAGS = -mmcu=$(MCU) 
+ASFLAGS = -mmcu=$(MCU) 
+
+OBJECTS += spi.o
+
+all: $(BUILD)/$(MAIN_NAME).hex $(BUILD)/$(MAIN_NAME).lst
+
+$(BUILD)/$(MAIN_NAME).hex: $(BUILD)/$(MAIN_NAME).elf
+	@echo -e "[HEX] $@"
+	@$(OBJCOPY) -O ihex $< $@
+
+$(BUILD)/$(MAIN_NAME).lst: $(BUILD)/$(MAIN_NAME).elf
+	@echo -e "[LST] $@"
+	@$(OBJDUMP) -DS $< > $@
+
+$(BUILD)/$(MAIN_NAME).elf: $(addprefix $(BUILD)/,$(OBJECTS))
+	@mkdir -p $(BUILD)
+	@echo -e "[LINK] $@"
+	@$(CC) $(addprefix $(BUILD)/,$(OBJECTS)) $(LDFLAGS) -o $(BUILD)/$(MAIN_NAME).elf
+
+program: $(BUILD)/$(MAIN_NAME).hex
+	@scp $(BUILD)/$(MAIN_NAME).hex hardhat:/tmp;
+	@ssh hardhat $(JTAG) -eEpvrw /tmp/$(MAIN_NAME).hex
+	#$(JTAG) -eEpvrw $(BUILD)/$(MAIN_NAME).hex
+
+program_windows: $(MAIN_NAME).hex
+	$(JTAG) -eEpvrw --backend=ti --lpt=COM6 $(MAIN_NAME).hex
+
+reset:
+	@ssh hardhat $(JTAG) -r
+	#$(JTAG) -r
