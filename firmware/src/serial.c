@@ -5,7 +5,7 @@
     Description: Part of the USBCAN program
 
     Copyright (C) David Snowdon, David Favaloro 2011. 
-    
+
     Date: 26-03-2011
    -------------------------------------------------------------------------- */
 
@@ -44,7 +44,7 @@ static char   received_byte;
 volatile char   is_received; 
 
 void
-init_uart() {
+init_uart(uint32_t baudrate) {
 	UCTL0 = SWRST | CHAR; /* Leave in reset mode, set to 8 bit data (8N1) */
 	UTCTL0 = SSEL_SMCLK; /* SMCLK */
 
@@ -57,7 +57,7 @@ init_uart() {
 	uart0_free = 1;
 
 	/* See mspgcc.sourceforge.net/baudrate.html */
-	UART_baud_rate(115200, CLOCK_SPEED); 
+	UART_baud_rate(baudrate, CLOCK_SPEED); 
 	
 	ME1 |= UTXE0 | URXE0; /* Module enable Tx and Rx */
 /*	P3OUT |= UTXD0; */
@@ -77,7 +77,7 @@ init_uart() {
  * initialising the pointers used by the UART0 interrupt handler in the process
  */
 int
-uart0_tx(char * buf, int buf_len) {
+UART_tx(char * buf, int buf_len) {
 	if (uart0_free) {
 		uart0_free = 0;
 		/* dint ?*/
@@ -160,7 +160,11 @@ extern void UART_baud_rate      (u32 rate, u32 clock_speed){
 
 extern void UART_SendByte       (u08 data){
   UART_flush_tx(); 
-  uart0_tx(&data, 1); 
+  UART_tx(&data, 1); 
+}
+
+void UART_putchar(char c) {
+	UART_SendByte(c);
 }
 
 extern void UART_flush_tx       (void){
@@ -185,16 +189,16 @@ extern void UART_PrintfProgStr  (u08* buf){
 
   UART_flush_tx(); 
 
-  uart0_tx(buf, i); 
+  UART_tx(buf, i); 
 }
 
 extern void UART_PrintfEndOfLine(void){
   UART_flush_tx(); 
-  uart0_tx("\n\r", 2); 
+  UART_tx("\n\r", 2); 
 }
 
-extern void UART_Init           (void){
- init_uart(); 
+extern void UART_Init           (uint32_t baudrate){
+ init_uart(baudrate); 
 }
 
 extern u08  UART_CheckReceived  (void){

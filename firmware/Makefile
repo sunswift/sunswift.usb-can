@@ -22,7 +22,7 @@ OBJECTS  = $(MAIN_NAME).o scandal_obligations.o
 # Scandal objects
 OBJECTS += engine.o error.o manager.o maths.o message.o utils.o stdio.o leds.o wavesculptor.o
 # Driver objects
-OBJECTS += can.o flash.o uart.o gpio.o timer.o wdt.o system.o
+OBJECTS += can.o flash.o serial.o gpio.o timer.o wdt.o system.o
 # Add other objects here or in the architecture specific makefile
 OBJECTS +=
 
